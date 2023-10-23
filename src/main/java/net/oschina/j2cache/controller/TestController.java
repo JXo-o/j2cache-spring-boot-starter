@@ -1,7 +1,7 @@
 package net.oschina.j2cache.controller;
 
-import net.oschina.j2cache.CacheChannel;
-import net.oschina.j2cache.CacheObject;
+import net.oschina.j2cache.service.cache.CacheChannel;
+import net.oschina.j2cache.model.CacheObject;
 import net.oschina.j2cache.J2Cache;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.lang.NonNull;
@@ -22,7 +22,7 @@ import java.util.*;
 @RequestMapping("/J2Cache")
 public class TestController {
     private static long TTL = 0;
-    private CacheChannel cacheChannel = J2Cache.getChannel();
+    private final CacheChannel cacheChannel = J2Cache.getChannel();
     @PostMapping("/set")
     public String testSet(@NonNull @RequestParam String region,
                           @NonNull @RequestParam String key,
@@ -30,7 +30,7 @@ public class TestController {
 
         String[] keys = key.split(",");
         String[] values = value.split(",");
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
 
         if (keys.length != values.length)
             return "Error: keys.length != values.length";
@@ -58,7 +58,7 @@ public class TestController {
     public String testGet(@NonNull @RequestParam String region,
                           @NonNull @RequestParam String key) {
 
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
 
         if (!key.contains(",")) {
             CacheObject value = cacheChannel.get(region, key);
@@ -80,7 +80,7 @@ public class TestController {
     public String testEvict(@NonNull @RequestParam String region,
                             @NonNull @RequestParam String key) {
 
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
         String[] keys = key.split(",");
         cacheChannel.evict(region, keys);
 
@@ -94,7 +94,7 @@ public class TestController {
     @PostMapping("/clear")
     public String testClear(@NonNull @RequestParam String region) {
 
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
 
         cacheChannel.clear(region);
         res.append(String.format("Cache [%s] clear.%n", region));
@@ -105,12 +105,10 @@ public class TestController {
     @PostMapping("/regions")
     public String testRegions() {
 
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
 
         res.append("Regions:\n");
-        cacheChannel.regions().forEach(r -> {
-            res.append(r).append("\n");
-        });
+        cacheChannel.regions().forEach(r -> res.append(r).append("\n"));
 
         return res.toString();
     }
@@ -118,7 +116,7 @@ public class TestController {
     @PostMapping("/keys")
     public String testKeys(@NonNull @RequestParam String region) {
 
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
 
         Collection<String> keys = cacheChannel.keys(region);
         if (keys != null) {
@@ -133,7 +131,7 @@ public class TestController {
     @PostMapping("/ttl")
     public String testTtl(@NonNull @RequestParam String ttl) {
 
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
 
         try {
             Long.parseLong(ttl);
@@ -149,20 +147,18 @@ public class TestController {
     @PostMapping("/help")
     public String testHelp() {
 
-        StringBuffer res = new StringBuffer();
-
-        res.append("Usage:\n");
-        res.append("Notice: Separate multiple keys or values with ','\n");
-        res.append("http://localhost:9998/J2Cache/set - <region> <key> <value> - Set a value to cache\n");
-        res.append("http://localhost:9998/J2Cache/get <region> <key> - Get a value from cache\n");
-        res.append("http://localhost:9998/J2Cache/evict <region> <key> - Evict a value from cache\n");
-        res.append("http://localhost:9998/J2Cache/clear <region> - Clear cache\n");
-        res.append("http://localhost:9998/J2Cache/regions - List all regions\n");
-        res.append("http://localhost:9998/J2Cache/keys <region> - List all keys in region\n");
-        res.append("http://localhost:9998/J2Cache/ttl <ttl> - Set default TTL\n");
-        res.append("http://localhost:9998/J2Cache/help - Show this help message\n");
-
-        return res.toString();
+        return """
+                Usage:
+                Notice: Separate multiple keys or values with ','
+                http://localhost:9998/J2Cache/set - <region> <key> <value> - Set a value to cache
+                http://localhost:9998/J2Cache/get <region> <key> - Get a value from cache
+                http://localhost:9998/J2Cache/evict <region> <key> - Evict a value from cache
+                http://localhost:9998/J2Cache/clear <region> - Clear cache
+                http://localhost:9998/J2Cache/regions - List all regions
+                http://localhost:9998/J2Cache/keys <region> - List all keys in region
+                http://localhost:9998/J2Cache/ttl <ttl> - Set default TTL
+                http://localhost:9998/J2Cache/help - Show this help message
+                """;
     }
 
 }

@@ -1,5 +1,9 @@
 package net.oschina.j2cache;
 
+import net.oschina.j2cache.config.J2CacheConfig;
+import net.oschina.j2cache.exception.CacheException;
+import net.oschina.j2cache.service.cache.CacheChannel;
+
 import java.io.IOException;
 
 /**

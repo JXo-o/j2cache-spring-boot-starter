@@ -10,7 +10,6 @@ public class JxhJ2CacheApplication {
 
     public static void main(String[] args) throws IOException {
         SpringApplication.run(JxhJ2CacheApplication.class, args);
-        //J2CacheCmd.main(args);
     }
 
 }
