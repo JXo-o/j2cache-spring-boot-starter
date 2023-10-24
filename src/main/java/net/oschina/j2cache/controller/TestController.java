@@ -62,12 +62,19 @@ public class TestController {
 
         if (!key.contains(",")) {
             CacheObject value = cacheChannel.get(region, key);
-            res.append(String.format("[%s,%s,L%d]=>%s(TTL:%d)%n", value.getRegion(), value.getKey(), value.getLevel(), value.getValue(), TTL));
+            if (value.getValue() != null)
+                res.append(String.format("[%s,%s,L%d]=>%s(TTL:%d)%n",
+                        value.getRegion(), value.getKey(), value.getLevel(), value.getValue(), TTL));
         } else {
             List<String> keys = Arrays.asList(key.split(","));
             Map<String, CacheObject> values = cacheChannel.get(region, keys);
             if (values != null && !values.isEmpty()) {
-                values.forEach((k, v) -> res.append(String.format("[%s,%s,L%d]=>%s(TTL:%d)%n", v.getRegion(), v.getKey(), v.getLevel(), v.getValue(), TTL)));
+                values.forEach((k, v) -> {
+                    if (v.getValue() != null) {
+                        res.append(String.format("[%s,%s,L%d]=>%s(TTL:%d)%n",
+                                v.getRegion(), v.getKey(), v.getLevel(), v.getValue(), TTL));
+                    }
+                });
             } else {
                 res.append("none!");
             }
