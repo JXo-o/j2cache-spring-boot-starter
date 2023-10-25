@@ -1,0 +1,142 @@
+server:
+  port: 9997
+j2cache:
+  broadcast: redis
+  l1CacheName: caffeine
+  l2CacheName: redis
+  serialization: fastjson
+  syncTtlToRedis: true
+  defaultCacheNullObject: true
+  broadcastProperties:
+    blockWhenExhausted: false
+    channel: j2cache
+    channel.host: ''
+    cluster_name: j2cache
+    database: 0
+    hosts: 127.0.0.1:6379
+    jmxEnabled: false
+    lifo: false
+    maxIdle: 10
+    maxTotal: 100
+    maxWaitMillis: 5000
+    minEvictableIdleTimeMillis: 60000
+    minIdle: 1
+    mode: single
+    namespace: ''
+    numTestsPerEvictionRun: 10
+    password: ''
+    softMinEvictableIdleTimeMillis: 10
+    ssl: false
+    storage: generic
+    testOnBorrow: true
+    testOnReturn: false
+    testWhileIdle: true
+    timeBetweenEvictionRunsMillis: 300000
+    timeout: 2000
+  l1CacheProperties:
+    properties: /caffeine.properties
+  l2CacheProperties:
+    blockWhenExhausted: false
+    channel: j2cache
+    channel.host: ''
+    cluster_name: j2cache
+    database: 0
+    hosts: 127.0.0.1:6379
+    jmxEnabled: false
+    lifo: false
+    maxIdle: 10
+    maxTotal: 100
+    maxWaitMillis: 5000
+    minEvictableIdleTimeMillis: 60000
+    minIdle: 1
+    mode: single
+    namespace: ''
+    numTestsPerEvictionRun: 10
+    password: ''
+    softMinEvictableIdleTimeMillis: 10
+    ssl: false
+    storage: generic
+    testOnBorrow: true
+    testOnReturn: false
+    testWhileIdle: true
+    timeBetweenEvictionRunsMillis: 300000
+    timeout: 2000
+
+#caffeine:
+#  properties: /caffeine.properties
+#j2cache:
+#  L1:
+#    provider_class: caffeine
+#  L2:
+#    provider_class: redis
+#  broadcast: redis
+#  default_cache_null_object: true
+#  serialization: fastjson
+#  sync_ttl_to_redis: true
+#jgroups:
+#  channel:
+#    name: j2cache
+#  configXml: /network.xml
+#lettuce:
+#  channel: j2cache
+#  clusterTopologyRefresh: 3000
+#  database: 0
+#  hosts: 127.0.0.1:6379
+#  maxIdle: 10
+#  maxTotal: 100
+#  minIdle: 10
+#  mode: single
+#  namespace: ''
+#  password: ''
+#  scheme: redis
+#  sentinelMasterId: ''
+#  sentinelPassword: ''
+#  storage: hash
+#  timeout: 10000
+#memcached:
+#  connectTimeout: 1000
+#  connectionPoolSize: 10
+#  failureMode: false
+#  healSessionInterval: 1000
+#  maxQueuedNoReplyOperations: 100
+#  opTimeout: 100
+#  password: ''
+#  sanitizeKeys: false
+#  servers: 127.0.0.1:11211
+#  username: ''
+#rabbitmq:
+#  exchange: j2cache
+#  host: localhost
+#  password: guest
+#  port: 5672
+#  username: guest
+#redis:
+#  blockWhenExhausted: false
+#  channel: j2cache
+#  channel.host: ''
+#  cluster_name: j2cache
+#  database: 0
+#  hosts: 127.0.0.1:6379
+#  jmxEnabled: false
+#  lifo: false
+#  maxIdle: 10
+#  maxTotal: 100
+#  maxWaitMillis: 5000
+#  minEvictableIdleTimeMillis: 60000
+#  minIdle: 1
+#  mode: single
+#  namespace: ''
+#  numTestsPerEvictionRun: 10
+#  password: ''
+#  softMinEvictableIdleTimeMillis: 10
+#  ssl: false
+#  storage: generic
+#  testOnBorrow: true
+#  testOnReturn: false
+#  testWhileIdle: true
+#  timeBetweenEvictionRunsMillis: 300000
+#  timeout: 2000
+#rocketmq:
+#  hosts: 127.0.0.1:9876
+#  name: j2cache
+#  topic: j2cache

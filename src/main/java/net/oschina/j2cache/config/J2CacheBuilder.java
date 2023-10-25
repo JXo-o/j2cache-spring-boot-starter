@@ -1,6 +1,5 @@
-package net.oschina.j2cache;
+package net.oschina.j2cache.config;
 
-import net.oschina.j2cache.config.J2CacheConfig;
 import net.oschina.j2cache.service.cache.CacheChannel;
 import net.oschina.j2cache.service.cache.impl.CacheProviderHolder;
 import net.oschina.j2cache.service.cluster.ClusterPolicy;
@@ -30,9 +29,9 @@ public class J2CacheBuilder {
     private CacheProviderHolder holder;
     private ClusterPolicy policy; //不同的广播策略
     private AtomicBoolean opened = new AtomicBoolean(false);
-    private J2CacheConfig config;
+    private J2CacheProperties config;
 
-    private J2CacheBuilder(J2CacheConfig config) {
+    private J2CacheBuilder(J2CacheProperties config) {
         this.config = config;
     }
 
@@ -42,7 +41,7 @@ public class J2CacheBuilder {
      * @param config j2cache config instance
      * @return J2CacheBuilder instance
      */
-    public final static J2CacheBuilder init(J2CacheConfig config) {
+    public final static J2CacheBuilder init(J2CacheProperties config) {
         return new J2CacheBuilder(config);
     }
 
@@ -97,7 +96,7 @@ public class J2CacheBuilder {
      * @return
      * @throws IOException
      */
-    private void initFromConfig(J2CacheConfig config) {
+    private void initFromConfig(J2CacheProperties config) {
         SerializationUtils.init(config.getSerialization(), config.getSubProperties(config.getSerialization()));
         //初始化两级的缓存管理
         this.holder = CacheProviderHolder.init(config, (region, key) -> {

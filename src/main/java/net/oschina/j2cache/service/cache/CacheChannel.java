@@ -1,6 +1,6 @@
 package net.oschina.j2cache.service.cache;
 
-import net.oschina.j2cache.config.J2CacheConfig;
+import net.oschina.j2cache.config.J2CacheProperties;
 import net.oschina.j2cache.model.CacheObject;
 import net.oschina.j2cache.model.NullObject;
 import net.oschina.j2cache.service.cache.impl.CacheProviderHolder;
@@ -23,12 +23,12 @@ import java.util.stream.Collectors;
 public abstract class CacheChannel implements Closeable, AutoCloseable {
 
     private static final Map<String, Object> _g_keyLocks = new ConcurrentHashMap<>();
-    private J2CacheConfig config;
+    private J2CacheProperties config;
     private CacheProviderHolder holder;
     private boolean defaultCacheNullObject ;
     private boolean closed;
 
-    public CacheChannel(J2CacheConfig config, CacheProviderHolder holder) {
+    public CacheChannel(J2CacheProperties config, CacheProviderHolder holder) {
         this.config = config;
         this.holder = holder;
         this.defaultCacheNullObject = config.isDefaultCacheNullObject();

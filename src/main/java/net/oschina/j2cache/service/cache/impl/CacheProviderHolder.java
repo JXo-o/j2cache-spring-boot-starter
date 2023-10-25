@@ -1,6 +1,6 @@
 package net.oschina.j2cache.service.cache.impl;
 
-import net.oschina.j2cache.config.J2CacheConfig;
+import net.oschina.j2cache.config.J2CacheProperties;
 import net.oschina.j2cache.exception.CacheException;
 import net.oschina.j2cache.model.CacheObject;
 import net.oschina.j2cache.service.cache.*;
@@ -46,7 +46,7 @@ public class CacheProviderHolder {
      * @param listener cache listener
      * @return holder : return CacheProviderHolder instance
      */
-    public static CacheProviderHolder init(J2CacheConfig config, CacheExpiredListener listener) {
+    public static CacheProviderHolder init(J2CacheProperties config, CacheExpiredListener listener) {
 
         CacheProviderHolder holder = new CacheProviderHolder();
 
