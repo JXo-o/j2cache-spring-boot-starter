@@ -7,9 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
-import redis.clients.util.Pool;
+import redis.clients.jedis.util.Pool;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Properties;
@@ -63,17 +62,19 @@ public class RedisPubSubClusterPolicy extends JedisPubSub implements ClusterPoli
             hosts.addAll(Arrays.asList(node.split(",")));
             String masterName = props.getProperty("cluster_name", "j2cache");
             this.client = new JedisSentinelPool(masterName, hosts, config, timeout, password, database);
-        } else if ("cluster".equalsIgnoreCase(mode)) {
-            String[] nodeArray = node.split(",");
-            Set<HostAndPort> nodeSet = new HashSet<HostAndPort>(nodeArray.length);
-            for (String nodeItem : nodeArray) {
-                String[] arr = nodeItem.split(":");
-                nodeSet.add(new HostAndPort(arr[0], Integer.valueOf(arr[1])));
-            }
-            JedisPoolConfig poolConfig = RedisUtils.newPoolConfig(props, null);
-            this.cluster = new JedisCluster(nodeSet, CONNECT_TIMEOUT, SO_TIMEOUT, MAX_ATTEMPTS, password, poolConfig);
-            this.clusterMode = true;
-        } else {
+        }
+//        else if ("cluster".equalsIgnoreCase(mode)) {
+//            String[] nodeArray = node.split(",");
+//            Set<HostAndPort> nodeSet = new HashSet<HostAndPort>(nodeArray.length);
+//            for (String nodeItem : nodeArray) {
+//                String[] arr = nodeItem.split(":");
+//                nodeSet.add(new HostAndPort(arr[0], Integer.valueOf(arr[1])));
+//            }
+//            JedisPoolConfig poolConfig = RedisUtils.newPoolConfig(props, null);
+//            this.cluster = new JedisCluster(nodeSet, CONNECT_TIMEOUT, SO_TIMEOUT, MAX_ATTEMPTS, password, poolConfig);
+//            this.clusterMode = true;
+//        }
+        else {
             node = node.split(",")[0]; //取第一台主机
             String[] infos = node.split(":");
             String host = infos[0];
@@ -200,13 +201,6 @@ public class RedisPubSubClusterPolicy extends JedisPubSub implements ClusterPoli
         handleCommand(cmd);
     }
 
-    @Override
-    public void unsubscribe() {
-        if (!this.clusterMode) {
-            super.unsubscribe();
-        }
-    }
-
     private void close() {
         try {
             if (this.client != null) {
@@ -215,14 +209,10 @@ public class RedisPubSubClusterPolicy extends JedisPubSub implements ClusterPoli
         } catch (Exception e) {
             e.printStackTrace();
         }
-        try {
-            if (this.cluster != null) {
-                this.cluster.close();
-            }
-            this.cluster = null;
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (this.cluster != null) {
+            this.cluster.close();
         }
+        this.cluster = null;
     }
 }
 

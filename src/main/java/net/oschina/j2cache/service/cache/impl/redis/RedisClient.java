@@ -3,10 +3,15 @@ package net.oschina.j2cache.service.cache.impl.redis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.*;
+import redis.clients.jedis.args.*;
+import redis.clients.jedis.commands.JedisBinaryCommands;
 import redis.clients.jedis.exceptions.JedisConnectionException;
-import redis.clients.jedis.params.geo.GeoRadiusParam;
-import redis.clients.jedis.params.sortedset.ZAddParams;
-import redis.clients.jedis.params.sortedset.ZIncrByParams;
+import redis.clients.jedis.params.*;
+import redis.clients.jedis.resps.GeoRadiusResponse;
+import redis.clients.jedis.resps.LCSMatchResult;
+import redis.clients.jedis.resps.ScanResult;
+import redis.clients.jedis.resps.Tuple;
+import redis.clients.jedis.util.KeyValue;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,12 +36,12 @@ public class RedisClient implements Closeable, AutoCloseable {
     private final static int SO_TIMEOUT = 5000;
     private final static int MAX_ATTEMPTS = 3;
 
-    private ThreadLocal<BinaryJedisCommands> clients;
+    private ThreadLocal<JedisBinaryCommands> clients;
 
     private JedisCluster cluster;
     private JedisPool single;
     private JedisSentinelPool sentinel;
-    private ShardedJedisPool sharded;
+    //private ShardedJedisPool sharded;
 
     /**
      * RedisClient 构造器
@@ -116,26 +121,26 @@ public class RedisClient implements Closeable, AutoCloseable {
                     nodes.add(node);
                 this.sentinel = new JedisSentinelPool(cluster_name, nodes, poolConfig, CONNECT_TIMEOUT, password, database);
                 break;
-            case "cluster":
-                Set<HostAndPort> hps = new HashSet<>();
-                for(String node : hosts.split(",")){
-                    String[] infos = node.split(":");
-                    String host = infos[0];
-                    int port = (infos.length > 1)?Integer.parseInt(infos[1]):6379;
-                    hps.add(new HostAndPort(host, port));
-                }
-                this.cluster = new JedisCluster(hps, CONNECT_TIMEOUT, SO_TIMEOUT, MAX_ATTEMPTS, password, poolConfig);
-                break;
-            case "sharded":
-                List<JedisShardInfo> shards = new ArrayList<>();
-                try {
-                    for(String node : hosts.split(","))
-                        shards.add(new JedisShardInfo(new URI(node)));
-                } catch (URISyntaxException e) {
-                    throw new JedisConnectionException(e);
-                }
-                this.sharded = new ShardedJedisPool(poolConfig, shards);
-                break;
+//            case "cluster":
+//                Set<HostAndPort> hps = new HashSet<>();
+//                for(String node : hosts.split(",")){
+//                    String[] infos = node.split(":");
+//                    String host = infos[0];
+//                    int port = (infos.length > 1)?Integer.parseInt(infos[1]):6379;
+//                    hps.add(new HostAndPort(host, port));
+//                }
+//                this.cluster = new JedisCluster(hps, CONNECT_TIMEOUT, SO_TIMEOUT, MAX_ATTEMPTS, password, poolConfig);
+//                break;
+//            case "sharded":
+//                List<JedisShardInfo> shards = new ArrayList<>();
+//                try {
+//                    for(String node : hosts.split(","))
+//                        shards.add(new JedisShardInfo(new URI(node)));
+//                } catch (URISyntaxException e) {
+//                    throw new JedisConnectionException(e);
+//                }
+//                this.sharded = new ShardedJedisPool(poolConfig, shards);
+//                break;
             default:
                 for(String node : hosts.split(",")) {
                     String[] infos = node.split(":");
@@ -154,17 +159,17 @@ public class RedisClient implements Closeable, AutoCloseable {
      * 获取客户端接口
      * @return 返回基本的 Jedis 二进制命令接口
      */
-    public BinaryJedisCommands get() {
-        BinaryJedisCommands client = clients.get();
+    public JedisBinaryCommands get() {
+        JedisBinaryCommands client = clients.get();
         if(client == null) {
             if (single != null)
                 client = single.getResource();
             else if (sentinel != null)
                 client = sentinel.getResource();
-            else if (sharded != null)
-                client = sharded.getResource();
+//            else if (sharded != null)
+//                client = sharded.getResource();
             else if (cluster != null)
-                client = toBinaryJedisCommands(cluster);
+                client = toJedisBinaryCommands(cluster);
 
             clients.set(client);
         }
@@ -201,8 +206,8 @@ public class RedisClient implements Closeable, AutoCloseable {
             sentinel.close();
         if(cluster != null)
             cluster.close();
-        if(sharded != null)
-            sharded.close();
+//        if(sharded != null)
+//            sharded.close();
     }
 
     /**
@@ -210,20 +215,275 @@ public class RedisClient implements Closeable, AutoCloseable {
      * @param cluster Jedis 集群实例
      * @return
      */
-    private BinaryJedisCommands toBinaryJedisCommands(JedisCluster cluster) {
-        return new BinaryJedisCommands(){
+    private JedisBinaryCommands toJedisBinaryCommands(JedisCluster cluster) {
+        return new JedisBinaryCommands(){
+            @Override
+            public byte[] xadd(byte[] bytes, XAddParams xAddParams, Map<byte[], byte[]> map) {
+                return new byte[0];
+            }
+
+            @Override
+            public long xlen(byte[] bytes) {
+                return 0;
+            }
+
+            @Override
+            public List<Object> xrange(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xrange(byte[] bytes, byte[] bytes1, byte[] bytes2, int i) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xrevrange(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xrevrange(byte[] bytes, byte[] bytes1, byte[] bytes2, int i) {
+                return null;
+            }
+
+            @Override
+            public long xack(byte[] bytes, byte[] bytes1, byte[]... bytes2) {
+                return 0;
+            }
+
+            @Override
+            public String xgroupCreate(byte[] bytes, byte[] bytes1, byte[] bytes2, boolean b) {
+                return null;
+            }
+
+            @Override
+            public String xgroupSetID(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+                return null;
+            }
+
+            @Override
+            public long xgroupDestroy(byte[] bytes, byte[] bytes1) {
+                return 0;
+            }
+
+            @Override
+            public boolean xgroupCreateConsumer(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+                return false;
+            }
+
+            @Override
+            public long xgroupDelConsumer(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+                return 0;
+            }
+
+            @Override
+            public long xdel(byte[] bytes, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long xtrim(byte[] bytes, long l, boolean b) {
+                return 0;
+            }
+
+            @Override
+            public long xtrim(byte[] bytes, XTrimParams xTrimParams) {
+                return 0;
+            }
+
+            @Override
+            public Object xpending(byte[] bytes, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xpending(byte[] bytes, byte[] bytes1, XPendingParams xPendingParams) {
+                return null;
+            }
+
+            @Override
+            public List<byte[]> xclaim(byte[] bytes, byte[] bytes1, byte[] bytes2, long l, XClaimParams xClaimParams, byte[]... bytes3) {
+                return null;
+            }
+
+            @Override
+            public List<byte[]> xclaimJustId(byte[] bytes, byte[] bytes1, byte[] bytes2, long l, XClaimParams xClaimParams, byte[]... bytes3) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xautoclaim(byte[] bytes, byte[] bytes1, byte[] bytes2, long l, byte[] bytes3, XAutoClaimParams xAutoClaimParams) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xautoclaimJustId(byte[] bytes, byte[] bytes1, byte[] bytes2, long l, byte[] bytes3, XAutoClaimParams xAutoClaimParams) {
+                return null;
+            }
+
+            @Override
+            public Object xinfoStream(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public Object xinfoStreamFull(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public Object xinfoStreamFull(byte[] bytes, int i) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xinfoGroups(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xinfoConsumers(byte[] bytes, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xread(XReadParams xReadParams, Map.Entry<byte[], byte[]>... entries) {
+                return null;
+            }
+
+            @Override
+            public List<Object> xreadGroup(byte[] bytes, byte[] bytes1, XReadGroupParams xReadGroupParams, Map.Entry<byte[], byte[]>... entries) {
+                return null;
+            }
+
+            @Override
+            public Object eval(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public Object eval(byte[] bytes, int i, byte[]... bytes1) {
+                return null;
+            }
+
+            @Override
+            public Object eval(byte[] bytes, List<byte[]> list, List<byte[]> list1) {
+                return null;
+            }
+
+            @Override
+            public Object evalReadonly(byte[] bytes, List<byte[]> list, List<byte[]> list1) {
+                return null;
+            }
+
+            @Override
+            public Object evalsha(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public Object evalsha(byte[] bytes, int i, byte[]... bytes1) {
+                return null;
+            }
+
+            @Override
+            public Object evalsha(byte[] bytes, List<byte[]> list, List<byte[]> list1) {
+                return null;
+            }
+
+            @Override
+            public Object evalshaReadonly(byte[] bytes, List<byte[]> list, List<byte[]> list1) {
+                return null;
+            }
+
+            @Override
+            public Object fcall(byte[] bytes, List<byte[]> list, List<byte[]> list1) {
+                return null;
+            }
+
+            @Override
+            public Object fcallReadonly(byte[] bytes, List<byte[]> list, List<byte[]> list1) {
+                return null;
+            }
+
+            @Override
+            public String functionDelete(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public byte[] functionDump() {
+                return new byte[0];
+            }
+
+            @Override
+            public String functionFlush() {
+                return null;
+            }
+
+            @Override
+            public String functionFlush(FlushMode flushMode) {
+                return null;
+            }
+
+            @Override
+            public String functionKill() {
+                return null;
+            }
+
+            @Override
+            public List<Object> functionListBinary() {
+                return null;
+            }
+
+            @Override
+            public List<Object> functionList(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public List<Object> functionListWithCodeBinary() {
+                return null;
+            }
+
+            @Override
+            public List<Object> functionListWithCode(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public String functionLoad(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public String functionLoadReplace(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public String functionRestore(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public String functionRestore(byte[] bytes, FunctionRestorePolicy functionRestorePolicy) {
+                return null;
+            }
+
+            @Override
+            public Object functionStatsBinary() {
+                return null;
+            }
+
             @Override
             public String set(byte[] bytes, byte[] bytes1) {
                 return cluster.set(bytes, bytes1);
             }
 
             @Override
-            public String set(byte[] bytes, byte[] bytes1, byte[] bytes2) {
-                return null;
-            }
-
-            @Override
-            public String set(byte[] bytes, byte[] bytes1, byte[] bytes2, byte[] bytes3, long l) {
+            public String set(byte[] bytes, byte[] bytes1, SetParams var) {
                 return null;
             }
 
@@ -233,12 +493,37 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Boolean exists(byte[] bytes) {
+            public byte[] setGet(byte[] bytes, byte[] bytes1) {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] setGet(byte[] bytes, byte[] bytes1, SetParams setParams) {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] getDel(byte[] bytes) {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] getEx(byte[] bytes, GetExParams getExParams) {
+                return new byte[0];
+            }
+
+            @Override
+            public boolean exists(byte[] bytes) {
                 return cluster.exists(bytes);
             }
 
             @Override
-            public Long persist(byte[] bytes) {
+            public long exists(byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public long persist(byte[] bytes) {
                 return cluster.persist(bytes);
             }
 
@@ -248,52 +533,102 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long expire(byte[] bytes, int i) {
+            public byte[] dump(byte[] bytes) {
+                return new byte[0];
+            }
+
+            @Override
+            public String restore(byte[] bytes, long l, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public String restore(byte[] bytes, long l, byte[] bytes1, RestoreParams restoreParams) {
+                return null;
+            }
+
+            @Override
+            public long expire(byte[] bytes, long i) {
                 return cluster.expire(bytes, i);
             }
 
             @Override
-            public Long pexpire(String s, long l) {
-                return cluster.pexpire(s, l);
+            public long expire(byte[] bytes, long l, ExpiryOption expiryOption) {
+                return 0;
             }
 
             @Override
-            public Long pexpire(byte[] bytes, long l) {
+            public long pexpire(byte[] bytes, long l) {
                 return cluster.pexpire(bytes, l);
             }
 
             @Override
-            public Long expireAt(byte[] bytes, long l) {
+            public long pexpire(byte[] bytes, long l, ExpiryOption expiryOption) {
+                return 0;
+            }
+
+            @Override
+            public long expireTime(byte[] bytes) {
+                return 0;
+            }
+
+            @Override
+            public long pexpireTime(byte[] bytes) {
+                return 0;
+            }
+
+            @Override
+            public long expireAt(byte[] bytes, long l) {
                 return cluster.expireAt(bytes, l);
             }
 
             @Override
-            public Long pexpireAt(byte[] bytes, long l) {
+            public long expireAt(byte[] bytes, long l, ExpiryOption expiryOption) {
+                return 0;
+            }
+
+            @Override
+            public long pexpireAt(byte[] bytes, long l) {
                 return cluster.pexpireAt(bytes, l);
             }
 
             @Override
-            public Long ttl(byte[] bytes) {
+            public long pexpireAt(byte[] bytes, long l, ExpiryOption expiryOption) {
+                return 0;
+            }
+
+            @Override
+            public long ttl(byte[] bytes) {
                 return cluster.ttl(bytes);
             }
 
             @Override
-            public Boolean setbit(byte[] bytes, long l, boolean b) {
+            public long pttl(byte[] bytes) {
+                return 0;
+            }
+
+            @Override
+            public long touch(byte[] bytes) {
+                return 0;
+            }
+
+            @Override
+            public long touch(byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public boolean setbit(byte[] bytes, long l, boolean b) {
                 return cluster.setbit(bytes, l, b);
             }
 
             @Override
-            public Boolean setbit(byte[] bytes, long l, byte[] bytes1) {
-                return cluster.setbit(bytes, l, bytes1);
-            }
-
-            @Override
-            public Boolean getbit(byte[] bytes, long l) {
+            public boolean getbit(byte[] bytes, long l) {
                 return cluster.getbit(bytes, l);
             }
 
             @Override
-            public Long setrange(byte[] bytes, long l, byte[] bytes1) {
+            public long setrange(byte[] bytes, long l, byte[] bytes1) {
                 return cluster.setrange(bytes, l, bytes1);
             }
 
@@ -308,42 +643,62 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long setnx(byte[] bytes, byte[] bytes1) {
+            public long setnx(byte[] bytes, byte[] bytes1) {
                 return cluster.setnx(bytes, bytes1);
             }
 
             @Override
-            public String setex(byte[] bytes, int i, byte[] bytes1) {
+            public String setex(byte[] bytes, long i, byte[] bytes1) {
                 return cluster.setex(bytes, i, bytes1);
             }
 
             @Override
-            public Long decrBy(byte[] bytes, long l) {
+            public String psetex(byte[] bytes, long l, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public List<byte[]> mget(byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public String mset(byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public long msetnx(byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public long decrBy(byte[] bytes, long l) {
                 return cluster.decrBy(bytes, l);
             }
 
             @Override
-            public Long decr(byte[] bytes) {
+            public long decr(byte[] bytes) {
                 return cluster.decr(bytes);
             }
 
             @Override
-            public Long incrBy(byte[] bytes, long l) {
+            public long incrBy(byte[] bytes, long l) {
                 return cluster.incrBy(bytes, l);
             }
 
             @Override
-            public Double incrByFloat(byte[] bytes, double v) {
+            public double incrByFloat(byte[] bytes, double v) {
                 return cluster.incrByFloat(bytes, v);
             }
 
             @Override
-            public Long incr(byte[] bytes) {
+            public long incr(byte[] bytes) {
                 return cluster.incr(bytes);
             }
 
             @Override
-            public Long append(byte[] bytes, byte[] bytes1) {
+            public long append(byte[] bytes, byte[] bytes1) {
                 return cluster.append(bytes, bytes1);
             }
 
@@ -353,8 +708,13 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long hset(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public long hset(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.hset(bytes, bytes1, bytes2);
+            }
+
+            @Override
+            public long hset(byte[] bytes, Map<byte[], byte[]> map) {
+                return 0;
             }
 
             @Override
@@ -363,7 +723,7 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long hsetnx(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public long hsetnx(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.hsetnx(bytes, bytes1, bytes2);
             }
 
@@ -378,27 +738,27 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long hincrBy(byte[] bytes, byte[] bytes1, long l) {
+            public long hincrBy(byte[] bytes, byte[] bytes1, long l) {
                 return cluster.hincrBy(bytes, bytes1, l);
             }
 
             @Override
-            public Double hincrByFloat(byte[] bytes, byte[] bytes1, double v) {
+            public double hincrByFloat(byte[] bytes, byte[] bytes1, double v) {
                 return cluster.hincrByFloat(bytes, bytes1, v);
             }
 
             @Override
-            public Boolean hexists(byte[] bytes, byte[] bytes1) {
+            public boolean hexists(byte[] bytes, byte[] bytes1) {
                 return cluster.hexists(bytes, bytes1);
             }
 
             @Override
-            public Long hdel(byte[] bytes, byte[]... bytes1) {
+            public long hdel(byte[] bytes, byte[]... bytes1) {
                 return cluster.hdel(bytes, bytes1);
             }
 
             @Override
-            public Long hlen(byte[] bytes) {
+            public long hlen(byte[] bytes) {
                 return cluster.hlen(bytes);
             }
 
@@ -408,7 +768,7 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Collection<byte[]> hvals(byte[] bytes) {
+            public List<byte[]> hvals(byte[] bytes) {
                 return cluster.hvals(bytes);
             }
 
@@ -418,17 +778,32 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long rpush(byte[] bytes, byte[]... bytes1) {
+            public byte[] hrandfield(byte[] bytes) {
+                return new byte[0];
+            }
+
+            @Override
+            public List<byte[]> hrandfield(byte[] bytes, long l) {
+                return null;
+            }
+
+            @Override
+            public List<Map.Entry<byte[], byte[]>> hrandfieldWithValues(byte[] bytes, long l) {
+                return null;
+            }
+
+            @Override
+            public long rpush(byte[] bytes, byte[]... bytes1) {
                 return cluster.rpush(bytes, bytes1);
             }
 
             @Override
-            public Long lpush(byte[] bytes, byte[]... bytes1) {
+            public long lpush(byte[] bytes, byte[]... bytes1) {
                 return cluster.lpush(bytes, bytes1);
             }
 
             @Override
-            public Long llen(byte[] bytes) {
+            public long llen(byte[] bytes) {
                 return cluster.llen(bytes);
             }
 
@@ -453,7 +828,7 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long lrem(byte[] bytes, long l, byte[] bytes1) {
+            public long lrem(byte[] bytes, long l, byte[] bytes1) {
                 return cluster.lrem(bytes, l, bytes1);
             }
 
@@ -463,12 +838,37 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
+            public List<byte[]> lpop(byte[] bytes, int i) {
+                return null;
+            }
+
+            @Override
+            public Long lpos(byte[] bytes, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public Long lpos(byte[] bytes, byte[] bytes1, LPosParams lPosParams) {
+                return null;
+            }
+
+            @Override
+            public List<Long> lpos(byte[] bytes, byte[] bytes1, LPosParams lPosParams, long l) {
+                return null;
+            }
+
+            @Override
             public byte[] rpop(byte[] bytes) {
                 return cluster.rpop(bytes);
             }
 
             @Override
-            public Long sadd(byte[] bytes, byte[]... bytes1) {
+            public List<byte[]> rpop(byte[] bytes, int i) {
+                return null;
+            }
+
+            @Override
+            public long sadd(byte[] bytes, byte[]... bytes1) {
                 return cluster.sadd(bytes, bytes1);
             }
 
@@ -478,7 +878,7 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long srem(byte[] bytes, byte[]... bytes1) {
+            public long srem(byte[] bytes, byte[]... bytes1) {
                 return cluster.srem(bytes, bytes1);
             }
 
@@ -493,13 +893,18 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long scard(byte[] bytes) {
+            public long scard(byte[] bytes) {
                 return cluster.scard(bytes);
             }
 
             @Override
-            public Boolean sismember(byte[] bytes, byte[] bytes1) {
+            public boolean sismember(byte[] bytes, byte[] bytes1) {
                 return cluster.sismember(bytes, bytes1);
+            }
+
+            @Override
+            public List<Boolean> smismember(byte[] bytes, byte[]... bytes1) {
+                return null;
             }
 
             @Override
@@ -513,42 +918,52 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long strlen(byte[] bytes) {
+            public long strlen(byte[] bytes) {
                 return cluster.strlen(bytes);
             }
 
             @Override
-            public Long zadd(byte[] bytes, double v, byte[] bytes1) {
+            public LCSMatchResult lcs(byte[] bytes, byte[] bytes1, LCSParams lcsParams) {
+                return null;
+            }
+
+            @Override
+            public long zadd(byte[] bytes, double v, byte[] bytes1) {
                 return cluster.zadd(bytes, v, bytes1);
             }
 
             @Override
-            public Long zadd(byte[] bytes, double v, byte[] bytes1, ZAddParams zAddParams) {
+            public long zadd(byte[] bytes, double v, byte[] bytes1, ZAddParams zAddParams) {
                 return cluster.zadd(bytes, v, bytes1, zAddParams);
             }
 
             @Override
-            public Long zadd(byte[] bytes, Map<byte[], Double> map) {
+            public long zadd(byte[] bytes, Map<byte[], Double> map) {
                 return cluster.zadd(bytes, map);
             }
 
             @Override
-            public Long zadd(byte[] bytes, Map<byte[], Double> map, ZAddParams zAddParams) {
+            public long zadd(byte[] bytes, Map<byte[], Double> map, ZAddParams zAddParams) {
                 return cluster.zadd(bytes, map, zAddParams);
             }
 
             @Override
-            public Set<byte[]> zrange(byte[] bytes, long l, long l1) {
+            public Double zaddIncr(byte[] bytes, double v, byte[] bytes1, ZAddParams zAddParams) {
+                return null;
+            }
+
+            @Override
+            public List<byte[]> zrange(byte[] bytes, long l, long l1) {
                 return cluster.zrange(bytes, l, l1);
             }
 
             @Override
-            public Long zrem(byte[] bytes, byte[]... bytes1) {
+            public long zrem(byte[] bytes, byte[]... bytes1) {
                 return cluster.zrem(bytes, bytes1);
             }
 
             @Override
-            public Double zincrby(byte[] bytes, double v, byte[] bytes1) {
+            public double zincrby(byte[] bytes, double v, byte[] bytes1) {
                 return cluster.zincrby(bytes, v, bytes1);
             }
 
@@ -568,28 +983,93 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Set<byte[]> zrevrange(byte[] bytes, long l, long l1) {
+            public KeyValue<Long, Double> zrankWithScore(byte[] bytes, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public KeyValue<Long, Double> zrevrankWithScore(byte[] bytes, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public List<byte[]> zrevrange(byte[] bytes, long l, long l1) {
                 return cluster.zrevrange(bytes, l, l1);
             }
 
             @Override
-            public Set<Tuple> zrangeWithScores(byte[] bytes, long l, long l1) {
+            public List<Tuple> zrangeWithScores(byte[] bytes, long l, long l1) {
                 return cluster.zrangeWithScores(bytes, l, l1);
             }
 
             @Override
-            public Set<Tuple> zrevrangeWithScores(byte[] bytes, long l, long l1) {
+            public List<Tuple> zrevrangeWithScores(byte[] bytes, long l, long l1) {
                 return cluster.zrevrangeWithScores(bytes, l, l1);
             }
 
             @Override
-            public Long zcard(byte[] bytes) {
+            public List<byte[]> zrange(byte[] bytes, ZRangeParams zRangeParams) {
+                return null;
+            }
+
+            @Override
+            public List<Tuple> zrangeWithScores(byte[] bytes, ZRangeParams zRangeParams) {
+                return null;
+            }
+
+            @Override
+            public long zrangestore(byte[] bytes, byte[] bytes1, ZRangeParams zRangeParams) {
+                return 0;
+            }
+
+            @Override
+            public byte[] zrandmember(byte[] bytes) {
+                return new byte[0];
+            }
+
+            @Override
+            public List<byte[]> zrandmember(byte[] bytes, long l) {
+                return null;
+            }
+
+            @Override
+            public List<Tuple> zrandmemberWithScores(byte[] bytes, long l) {
+                return null;
+            }
+
+            @Override
+            public long zcard(byte[] bytes) {
                 return cluster.zcard(bytes);
             }
 
             @Override
             public Double zscore(byte[] bytes, byte[] bytes1) {
                 return cluster.zscore(bytes, bytes1);
+            }
+
+            @Override
+            public List<Double> zmscore(byte[] bytes, byte[]... bytes1) {
+                return null;
+            }
+
+            @Override
+            public Tuple zpopmax(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public List<Tuple> zpopmax(byte[] bytes, int i) {
+                return null;
+            }
+
+            @Override
+            public Tuple zpopmin(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public List<Tuple> zpopmin(byte[] bytes, int i) {
+                return null;
             }
 
             @Override
@@ -603,193 +1083,363 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long zcount(byte[] bytes, double v, double v1) {
+            public long zcount(byte[] bytes, double v, double v1) {
                 return cluster.zcount(bytes, v, v1);
             }
 
             @Override
-            public Long zcount(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public long zcount(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zcount(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Set<byte[]> zrangeByScore(byte[] bytes, double v, double v1) {
+            public List<byte[]> zrangeByScore(byte[] bytes, double v, double v1) {
                 return cluster.zrangeByScore(bytes, v, v1);
             }
 
             @Override
-            public Set<byte[]> zrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public List<byte[]> zrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zrangeByScore(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Set<byte[]> zrevrangeByScore(byte[] bytes, double v, double v1) {
+            public List<byte[]> zrevrangeByScore(byte[] bytes, double v, double v1) {
                 return cluster.zrevrangeByScore(bytes, v, v1);
             }
 
             @Override
-            public Set<byte[]> zrangeByScore(byte[] bytes, double v, double v1, int i, int i1) {
+            public List<byte[]> zrangeByScore(byte[] bytes, double v, double v1, int i, int i1) {
                 return cluster.zrangeByScore(bytes, v,v1,i,i1);
             }
 
             @Override
-            public Set<byte[]> zrevrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public List<byte[]> zrevrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zrevrangeByScore(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Set<byte[]> zrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
+            public List<byte[]> zrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
                 return cluster.zrangeByScore(bytes, bytes1, bytes2, i,i1);
             }
 
             @Override
-            public Set<byte[]> zrevrangeByScore(byte[] bytes, double v, double v1, int i, int i1) {
+            public List<byte[]> zrevrangeByScore(byte[] bytes, double v, double v1, int i, int i1) {
                 return cluster.zrevrangeByScore(bytes, v,v1,i,i1);
             }
 
             @Override
-            public Set<Tuple> zrangeByScoreWithScores(byte[] bytes, double v, double v1) {
+            public List<Tuple> zrangeByScoreWithScores(byte[] bytes, double v, double v1) {
                 return cluster.zrangeByScoreWithScores(bytes,v,v1);
             }
 
             @Override
-            public Set<Tuple> zrevrangeByScoreWithScores(byte[] bytes, double v, double v1) {
+            public List<Tuple> zrevrangeByScoreWithScores(byte[] bytes, double v, double v1) {
                 return cluster.zrevrangeByScoreWithScores(bytes, v, v1);
             }
 
             @Override
-            public Set<Tuple> zrangeByScoreWithScores(byte[] bytes, double v, double v1, int i, int i1) {
+            public List<Tuple> zrangeByScoreWithScores(byte[] bytes, double v, double v1, int i, int i1) {
                 return cluster.zrangeByScoreWithScores(bytes, v, v1, i, i1);
             }
 
             @Override
-            public Set<byte[]> zrevrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
+            public List<byte[]> zrevrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
                 return cluster.zrevrangeByScore(bytes, bytes1, bytes2, i, i1);
             }
 
             @Override
-            public Set<Tuple> zrangeByScoreWithScores(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public List<Tuple> zrangeByScoreWithScores(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zrangeByScoreWithScores(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Set<Tuple> zrevrangeByScoreWithScores(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public List<Tuple> zrevrangeByScoreWithScores(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zrevrangeByScoreWithScores(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Set<Tuple> zrangeByScoreWithScores(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
+            public List<Tuple> zrangeByScoreWithScores(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
                 return cluster.zrangeByScoreWithScores(bytes, bytes1, bytes2, i, i1);
             }
 
             @Override
-            public Set<Tuple> zrevrangeByScoreWithScores(byte[] bytes, double v, double v1, int i, int i1) {
+            public List<Tuple> zrevrangeByScoreWithScores(byte[] bytes, double v, double v1, int i, int i1) {
                 return cluster.zrevrangeByScoreWithScores(bytes, v, v1, i, i1);
             }
 
             @Override
-            public Set<Tuple> zrevrangeByScoreWithScores(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
+            public List<Tuple> zrevrangeByScoreWithScores(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
                 return cluster.zrevrangeByScoreWithScores(bytes, bytes1, bytes2, i, i1);
             }
 
             @Override
-            public Long zremrangeByRank(byte[] bytes, long l, long l1) {
+            public long zremrangeByRank(byte[] bytes, long l, long l1) {
                 return cluster.zremrangeByRank(bytes, l ,l1);
             }
 
             @Override
-            public Long zremrangeByScore(byte[] bytes, double v, double v1) {
+            public long zremrangeByScore(byte[] bytes, double v, double v1) {
                 return cluster.zremrangeByScore(bytes, v, v1);
             }
 
             @Override
-            public Long zremrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public long zremrangeByScore(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zremrangeByScore(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Long zlexcount(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public long zlexcount(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zlexcount(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Set<byte[]> zrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public List<byte[]> zrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zrangeByLex(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Set<byte[]> zrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
+            public List<byte[]> zrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
                 return cluster.zrangeByLex(bytes, bytes1, bytes2, i, i1);
             }
 
             @Override
-            public Set<byte[]> zrevrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public List<byte[]> zrevrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zrevrangeByLex(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Set<byte[]> zrevrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
+            public List<byte[]> zrevrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2, int i, int i1) {
                 return cluster.zrevrangeByLex(bytes, bytes1, bytes2, i, i1);
             }
 
             @Override
-            public Long zremrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+            public long zremrangeByLex(byte[] bytes, byte[] bytes1, byte[] bytes2) {
                 return cluster.zremrangeByLex(bytes, bytes1, bytes2);
             }
 
             @Override
-            public Long linsert(byte[] bytes, BinaryClient.LIST_POSITION list_position, byte[] bytes1, byte[] bytes2) {
+            public long linsert(byte[] bytes, ListPosition list_position, byte[] bytes1, byte[] bytes2) {
                 return cluster.linsert(bytes, list_position, bytes1, bytes2);
             }
 
             @Override
-            public Long lpushx(byte[] bytes, byte[]... bytes1) {
+            public long lpushx(byte[] bytes, byte[]... bytes1) {
                 return cluster.lpushx(bytes, bytes1);
             }
 
             @Override
-            public Long rpushx(byte[] bytes, byte[]... bytes1) {
+            public long rpushx(byte[] bytes, byte[]... bytes1) {
                 return cluster.rpushx(bytes, bytes1);
             }
 
             @Override
-            public List<byte[]> blpop(byte[] bytes) {
-                return cluster.blpop(0, bytes);
+            public List<byte[]> blpop(int var1, byte[]... var2) {
+                return cluster.blpop(var1, var2);
             }
 
             @Override
-            public List<byte[]> brpop(byte[] bytes) {
-                return cluster.brpop(0, bytes);
+            public KeyValue<byte[], byte[]> blpop(double v, byte[]... bytes) {
+                return null;
             }
 
             @Override
-            public Long del(byte[] bytes) {
+            public List<byte[]> brpop(int var1, byte[]... var2) {
+                return cluster.brpop(var1, var2);
+            }
+
+            @Override
+            public KeyValue<byte[], byte[]> brpop(double v, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public byte[] rpoplpush(byte[] bytes, byte[] bytes1) {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] brpoplpush(byte[] bytes, byte[] bytes1, int i) {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] lmove(byte[] bytes, byte[] bytes1, ListDirection listDirection, ListDirection listDirection1) {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] blmove(byte[] bytes, byte[] bytes1, ListDirection listDirection, ListDirection listDirection1, double v) {
+                return new byte[0];
+            }
+
+            @Override
+            public KeyValue<byte[], List<byte[]>> lmpop(ListDirection listDirection, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public KeyValue<byte[], List<byte[]>> lmpop(ListDirection listDirection, int i, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public KeyValue<byte[], List<byte[]>> blmpop(double v, ListDirection listDirection, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public KeyValue<byte[], List<byte[]>> blmpop(double v, ListDirection listDirection, int i, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public long del(byte[] bytes) {
                 return cluster.del(bytes);
             }
 
             @Override
-            public byte[] echo(byte[] bytes) {
-                return cluster.echo(bytes);
+            public long del(byte[]... bytes) {
+                return 0;
             }
 
             @Override
-            public Long move(byte[] bytes, int i) {
-                return cluster.move(new String(bytes), i);
+            public long unlink(byte[] bytes) {
+                return 0;
             }
 
             @Override
-            public Long bitcount(byte[] bytes) {
+            public long unlink(byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public boolean copy(byte[] bytes, byte[] bytes1, boolean b) {
+                return false;
+            }
+
+            @Override
+            public String rename(byte[] bytes, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public long renamenx(byte[] bytes, byte[] bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long sort(byte[] bytes, SortingParams sortingParams, byte[] bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long sort(byte[] bytes, byte[] bytes1) {
+                return 0;
+            }
+
+            @Override
+            public List<byte[]> sortReadonly(byte[] bytes, SortingParams sortingParams) {
+                return null;
+            }
+
+            @Override
+            public Long memoryUsage(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public Long memoryUsage(byte[] bytes, int i) {
+                return null;
+            }
+
+            @Override
+            public Long objectRefcount(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public byte[] objectEncoding(byte[] bytes) {
+                return new byte[0];
+            }
+
+            @Override
+            public Long objectIdletime(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public Long objectFreq(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public String migrate(String s, int i, byte[] bytes, int i1) {
+                return null;
+            }
+
+            @Override
+            public String migrate(String s, int i, int i1, MigrateParams migrateParams, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public Set<byte[]> keys(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public ScanResult<byte[]> scan(byte[] bytes) {
+                return null;
+            }
+
+            @Override
+            public ScanResult<byte[]> scan(byte[] bytes, ScanParams scanParams) {
+                return null;
+            }
+
+            @Override
+            public ScanResult<byte[]> scan(byte[] bytes, ScanParams scanParams, byte[] bytes1) {
+                return null;
+            }
+
+            @Override
+            public byte[] randomBinaryKey() {
+                return new byte[0];
+            }
+
+            @Override
+            public long bitcount(byte[] bytes) {
                 return cluster.bitcount(bytes);
             }
 
             @Override
-            public Long bitcount(byte[] bytes, long l, long l1) {
+            public long bitcount(byte[] bytes, long l, long l1) {
                 return cluster.bitcount(bytes, l, l1);
             }
 
             @Override
-            public Long pfadd(byte[] bytes, byte[]... bytes1) {
+            public long bitcount(byte[] bytes, long l, long l1, BitCountOption bitCountOption) {
+                return 0;
+            }
+
+            @Override
+            public long bitpos(byte[] bytes, boolean b) {
+                return 0;
+            }
+
+            @Override
+            public long bitpos(byte[] bytes, boolean b, BitPosParams bitPosParams) {
+                return 0;
+            }
+
+            @Override
+            public long pfadd(byte[] bytes, byte[]... bytes1) {
                 return cluster.pfadd(bytes, bytes1);
+            }
+
+            @Override
+            public String pfmerge(byte[] bytes, byte[]... bytes1) {
+                return null;
             }
 
             @Override
@@ -798,13 +1448,23 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public Long geoadd(byte[] bytes, double v, double v1, byte[] bytes1) {
+            public long pfcount(byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public long geoadd(byte[] bytes, double v, double v1, byte[] bytes1) {
                 return cluster.geoadd(bytes, v, v1, bytes1);
             }
 
             @Override
-            public Long geoadd(byte[] bytes, Map<byte[], GeoCoordinate> map) {
+            public long geoadd(byte[] bytes, Map<byte[], GeoCoordinate> map) {
                 return cluster.geoadd(bytes, map);
+            }
+
+            @Override
+            public long geoadd(byte[] bytes, GeoAddParams geoAddParams, Map<byte[], GeoCoordinate> map) {
+                return 0;
             }
 
             @Override
@@ -833,8 +1493,18 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
+            public List<GeoRadiusResponse> georadiusReadonly(byte[] bytes, double v, double v1, double v2, GeoUnit geoUnit) {
+                return null;
+            }
+
+            @Override
             public List<GeoRadiusResponse> georadius(byte[] bytes, double v, double v1, double v2, GeoUnit geoUnit, GeoRadiusParam geoRadiusParam) {
                 return cluster.georadius(bytes, v, v1, v2, geoUnit, geoRadiusParam);
+            }
+
+            @Override
+            public List<GeoRadiusResponse> georadiusReadonly(byte[] bytes, double v, double v1, double v2, GeoUnit geoUnit, GeoRadiusParam geoRadiusParam) {
+                return null;
             }
 
             @Override
@@ -843,8 +1513,83 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
+            public List<GeoRadiusResponse> georadiusByMemberReadonly(byte[] bytes, byte[] bytes1, double v, GeoUnit geoUnit) {
+                return null;
+            }
+
+            @Override
             public List<GeoRadiusResponse> georadiusByMember(byte[] bytes, byte[] bytes1, double v, GeoUnit geoUnit, GeoRadiusParam geoRadiusParam) {
                 return cluster.georadiusByMember(bytes, bytes1, v, geoUnit, geoRadiusParam);
+            }
+
+            @Override
+            public List<GeoRadiusResponse> georadiusByMemberReadonly(byte[] bytes, byte[] bytes1, double v, GeoUnit geoUnit, GeoRadiusParam geoRadiusParam) {
+                return null;
+            }
+
+            @Override
+            public long georadiusStore(byte[] bytes, double v, double v1, double v2, GeoUnit geoUnit, GeoRadiusParam geoRadiusParam, GeoRadiusStoreParam geoRadiusStoreParam) {
+                return 0;
+            }
+
+            @Override
+            public long georadiusByMemberStore(byte[] bytes, byte[] bytes1, double v, GeoUnit geoUnit, GeoRadiusParam geoRadiusParam, GeoRadiusStoreParam geoRadiusStoreParam) {
+                return 0;
+            }
+
+            @Override
+            public List<GeoRadiusResponse> geosearch(byte[] bytes, byte[] bytes1, double v, GeoUnit geoUnit) {
+                return null;
+            }
+
+            @Override
+            public List<GeoRadiusResponse> geosearch(byte[] bytes, GeoCoordinate geoCoordinate, double v, GeoUnit geoUnit) {
+                return null;
+            }
+
+            @Override
+            public List<GeoRadiusResponse> geosearch(byte[] bytes, byte[] bytes1, double v, double v1, GeoUnit geoUnit) {
+                return null;
+            }
+
+            @Override
+            public List<GeoRadiusResponse> geosearch(byte[] bytes, GeoCoordinate geoCoordinate, double v, double v1, GeoUnit geoUnit) {
+                return null;
+            }
+
+            @Override
+            public List<GeoRadiusResponse> geosearch(byte[] bytes, GeoSearchParam geoSearchParam) {
+                return null;
+            }
+
+            @Override
+            public long geosearchStore(byte[] bytes, byte[] bytes1, byte[] bytes2, double v, GeoUnit geoUnit) {
+                return 0;
+            }
+
+            @Override
+            public long geosearchStore(byte[] bytes, byte[] bytes1, GeoCoordinate geoCoordinate, double v, GeoUnit geoUnit) {
+                return 0;
+            }
+
+            @Override
+            public long geosearchStore(byte[] bytes, byte[] bytes1, byte[] bytes2, double v, double v1, GeoUnit geoUnit) {
+                return 0;
+            }
+
+            @Override
+            public long geosearchStore(byte[] bytes, byte[] bytes1, GeoCoordinate geoCoordinate, double v, double v1, GeoUnit geoUnit) {
+                return 0;
+            }
+
+            @Override
+            public long geosearchStore(byte[] bytes, byte[] bytes1, GeoSearchParam geoSearchParam) {
+                return 0;
+            }
+
+            @Override
+            public long geosearchStoreStoreDist(byte[] bytes, byte[] bytes1, GeoSearchParam geoSearchParam) {
+                return 0;
             }
 
             @Override
@@ -858,6 +1603,11 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
+            public long hstrlen(byte[] bytes, byte[] bytes1) {
+                return 0;
+            }
+
+            @Override
             public ScanResult<byte[]> sscan(byte[] bytes, byte[] bytes1) {
                 return cluster.sscan(bytes, bytes1);
             }
@@ -865,6 +1615,51 @@ public class RedisClient implements Closeable, AutoCloseable {
             @Override
             public ScanResult<byte[]> sscan(byte[] bytes, byte[] bytes1, ScanParams scanParams) {
                 return cluster.sscan(bytes, bytes1, scanParams);
+            }
+
+            @Override
+            public Set<byte[]> sdiff(byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public long sdiffstore(byte[] bytes, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public Set<byte[]> sinter(byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public long sinterstore(byte[] bytes, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long sintercard(byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public long sintercard(int i, byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public Set<byte[]> sunion(byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public long sunionstore(byte[] bytes, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long smove(byte[] bytes, byte[] bytes1, byte[] bytes2) {
+                return 0;
             }
 
             @Override
@@ -878,8 +1673,118 @@ public class RedisClient implements Closeable, AutoCloseable {
             }
 
             @Override
-            public List<byte[]> bitfield(byte[] bytes, byte[]... bytes1) {
+            public KeyValue<byte[], Tuple> bzpopmax(double v, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public KeyValue<byte[], Tuple> bzpopmin(double v, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public List<byte[]> zdiff(byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public List<Tuple> zdiffWithScores(byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public long zdiffStore(byte[] bytes, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long zdiffstore(byte[] bytes, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public List<byte[]> zinter(ZParams zParams, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public List<Tuple> zinterWithScores(ZParams zParams, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public long zinterstore(byte[] bytes, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long zinterstore(byte[] bytes, ZParams zParams, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long zintercard(byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public long zintercard(long l, byte[]... bytes) {
+                return 0;
+            }
+
+            @Override
+            public List<byte[]> zunion(ZParams zParams, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public List<Tuple> zunionWithScores(ZParams zParams, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public long zunionstore(byte[] bytes, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public long zunionstore(byte[] bytes, ZParams zParams, byte[]... bytes1) {
+                return 0;
+            }
+
+            @Override
+            public KeyValue<byte[], List<Tuple>> zmpop(SortedSetOption sortedSetOption, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public KeyValue<byte[], List<Tuple>> zmpop(SortedSetOption sortedSetOption, int i, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public KeyValue<byte[], List<Tuple>> bzmpop(double v, SortedSetOption sortedSetOption, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public KeyValue<byte[], List<Tuple>> bzmpop(double v, SortedSetOption sortedSetOption, int i, byte[]... bytes) {
+                return null;
+            }
+
+            @Override
+            public List<Long> bitfield(byte[] bytes, byte[]... bytes1) {
                 return cluster.bitfield(bytes, bytes1);
+            }
+
+            @Override
+            public List<Long> bitfieldReadonly(byte[] bytes, byte[]... bytes1) {
+                return null;
+            }
+
+            @Override
+            public long bitop(BitOP bitOP, byte[] bytes, byte[]... bytes1) {
+                return 0;
             }
         };
     }
