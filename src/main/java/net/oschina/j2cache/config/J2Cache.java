@@ -24,7 +24,7 @@ public class J2Cache {
 
     public static J2Cache getInstance(J2CacheProperties config) {
         if (instance == null) {
-            synchronized (J2Cache.class) {  // 添加同步块
+            synchronized (J2Cache.class) {
                 if (instance == null) {
                     instance = new J2Cache(config);
                 }
