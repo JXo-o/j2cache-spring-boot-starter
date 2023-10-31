@@ -1,11 +1,8 @@
 package net.oschina.j2cache.service.cache.impl.redis;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +13,8 @@ import net.oschina.j2cache.exception.CacheException;
 import net.oschina.j2cache.service.cache.Level2Cache;
 
 import redis.clients.jedis.commands.JedisBinaryCommands;
+import redis.clients.jedis.commands.KeyBinaryCommands;
+import redis.clients.jedis.commands.StringBinaryCommands;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
 
@@ -92,10 +91,10 @@ public class RedisGenericCache implements Level2Cache {
     public List<byte[]> getBytes(Collection<String> keys) {
         try {
             JedisBinaryCommands cmd = client.get();
-//            if(cmd instanceof MultiKeyBinaryCommands) {
-//                byte[][] bytes = keys.stream().map(k -> _key(k)).toArray(byte[][]::new);
-//                return ((MultiKeyBinaryCommands)cmd).mget(bytes);
-//            }
+            if(cmd instanceof StringBinaryCommands) {
+                byte[][] bytes = keys.stream().map(k -> _key(k)).toArray(byte[][]::new);
+                return ((StringBinaryCommands)cmd).mget(bytes);
+            }
             return keys.stream().map(k -> getBytes(k)).collect(Collectors.toList());
         } finally {
             client.release();
@@ -115,16 +114,16 @@ public class RedisGenericCache implements Level2Cache {
     public void setBytes(Map<String,byte[]> bytes) {
         try {
             JedisBinaryCommands cmd = client.get();
-//            if(cmd instanceof MultiKeyBinaryCommands) {
-//                byte[][] data = new byte[bytes.size() * 2][];
-//                int idx = 0;
-//                for(String key : bytes.keySet()){
-//                    data[idx++] = _key(key);
-//                    data[idx++] = bytes.get(key);
-//                }
-//                ((MultiKeyBinaryCommands)cmd).mset(data);
-//            }
-//            else
+            if(cmd instanceof StringBinaryCommands) {
+                byte[][] data = new byte[bytes.size() * 2][];
+                int idx = 0;
+                for(String key : bytes.keySet()){
+                    data[idx++] = _key(key);
+                    data[idx++] = bytes.get(key);
+                }
+                ((StringBinaryCommands)cmd).mset(data);
+            }
+            else
             bytes.forEach((k,v) -> setBytes(k, v));
         } finally {
             client.release();
@@ -193,48 +192,57 @@ public class RedisGenericCache implements Level2Cache {
     public Collection<String> keys() {
         try {
             JedisBinaryCommands cmd = client.get();
-//            if (cmd instanceof MultiKeyCommands) {
-//                Collection<String> keys = keys(cmd);
-//
-//                return keys.stream().map(k -> k.substring(this.region.length()+1)).collect(Collectors.toList());
-//            }
+            if (cmd instanceof StringBinaryCommands) {
+                Collection<String> keys = keys(cmd);
+
+                return keys.stream().map(k -> k.substring(this.region.length()+1)).collect(Collectors.toList());
+            }
         } finally {
             client.release();
         }
         throw new CacheException("keys() not implemented in Redis Generic Mode");
     }
 
-//    private Collection<String> keys(JedisBinaryCommands cmd) {
-//        Collection<String> keys = new ArrayList<>();
-//        String cursor = "0";
-//        ScanParams scanParams = new ScanParams();
-//        scanParams.match(this.region + ":*");
-//        scanParams.count(scanCount); // 这个不是返回结果的数量，应该是每次scan的数量
-//        ScanResult<String> scan = ((MultiKeyCommands) cmd).scan(cursor, scanParams);
-//        while (null != scan.getCursor()) {
-//            keys.addAll(scan.getResult()); // 这一次scan match到的结果
-//            if (!StringUtils.equals(cursor, scan.getCursor())) { // 不断拿着新的cursor scan，最终会拿到所有匹配的值
-//                scan = ((MultiKeyCommands) cmd).scan(scan.getStringCursor(), scanParams);
-//                continue;
-//            } else {
-//                break;
-//            }
-//        }
-//        return keys;
-//    }
+    private Collection<String> keys(JedisBinaryCommands cmd) {
+        Collection<String> keys = new ArrayList<>();
+        String cursor = "0";
+        ScanParams scanParams = new ScanParams();
+        scanParams.match(this.region + ":*");
+        scanParams.count(scanCount); // 这个不是返回结果的数量，应该是每次scan的数量
+        ScanResult<byte[]> scan = ((KeyBinaryCommands) cmd).scan(cursor.getBytes(StandardCharsets.UTF_8), scanParams);
+        while (null != scan.getCursor()) {
+            keys.addAll(convertByteListToStringList(scan.getResult())); // 这一次scan match到的结果
+            if (!StringUtils.equals(cursor, scan.getCursor())) { // 不断拿着新的cursor scan，最终会拿到所有匹配的值
+                scan = ((KeyBinaryCommands) cmd).scan(scan.getCursor().getBytes(StandardCharsets.UTF_8), scanParams);
+                continue;
+            } else {
+                break;
+            }
+        }
+        return keys;
+    }
+
+    public static List<String> convertByteListToStringList(List<byte[]> byteList) {
+        List<String> stringList = new ArrayList<>();
+        for (byte[] bytes : byteList) {
+            String encodedString = new String(bytes, StandardCharsets.UTF_8);
+            stringList.add(encodedString);
+        }
+        return stringList;
+    }
 
     @Override
     public void evict(String...keys) {
         try {
             JedisBinaryCommands cmd = client.get();
-//            if (cmd instanceof BinaryJedis) {
-//                byte[][] bytes = Arrays.stream(keys).map(k -> _key(k)).toArray(byte[][]::new);
-//                ((BinaryJedis)cmd).del(bytes);
-//            }
-//            else {
-//                for (String key : keys)
-//                    cmd.del(_key(key));
-//            }
+            if (cmd instanceof KeyBinaryCommands) {
+                byte[][] bytes = Arrays.stream(keys).map(k -> _key(k)).toArray(byte[][]::new);
+                ((KeyBinaryCommands)cmd).del(bytes);
+            }
+            else {
+                for (String key : keys)
+                    cmd.del(_key(key));
+            }
             for (String key : keys)
                 cmd.del(_key(key));
         } finally {
@@ -249,16 +257,30 @@ public class RedisGenericCache implements Level2Cache {
     public void clear() {
         try {
             JedisBinaryCommands cmd = client.get();
-//            if (cmd instanceof MultiKeyCommands) {
-//                Collection<String> keysCollection = keys(cmd);
-//                String[] keys = keysCollection.stream().toArray(String[]::new);
-//                if (keys != null && keys.length > 0)
-//                    ((MultiKeyCommands) cmd).del(keys);
-//            }
-//            else
-//                throw new CacheException("clear() not implemented in Redis Generic Mode");
+            if (cmd instanceof KeyBinaryCommands) {
+                Collection<String> keysCollection = keys(cmd);
+                String[] keys = keysCollection.stream().toArray(String[]::new);
+                if (keys != null && keys.length > 0)
+                    ((KeyBinaryCommands) cmd).del(convertStringArrayToByteArrayArray(keys));
+            }
+            else
+                throw new CacheException("clear() not implemented in Redis Generic Mode");
         } finally {
             client.release();
         }
     }
+
+    public static byte[][] convertStringArrayToByteArrayArray(String[] stringArray) {
+        byte[][] byteArrayArray = new byte[stringArray.length][];
+        try {
+            for (int i = 0; i < stringArray.length; i++) {
+                byteArrayArray[i] = stringArray[i].getBytes(StandardCharsets.UTF_8);
+            }
+        } catch (Exception e) {
+            // Handle the exception
+            e.printStackTrace();
+        }
+        return byteArrayArray;
+    }
+
 }
