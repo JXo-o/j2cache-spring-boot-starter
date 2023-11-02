@@ -1,5 +1,6 @@
 package net.oschina.j2cache.service.cache.impl.redis;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.*;
@@ -121,16 +122,35 @@ public class RedisClient implements Closeable, AutoCloseable {
                     nodes.add(node);
                 this.sentinel = new JedisSentinelPool(cluster_name, nodes, poolConfig, CONNECT_TIMEOUT, password, database);
                 break;
-//            case "cluster":
-//                Set<HostAndPort> hps = new HashSet<>();
-//                for(String node : hosts.split(",")){
-//                    String[] infos = node.split(":");
-//                    String host = infos[0];
-//                    int port = (infos.length > 1)?Integer.parseInt(infos[1]):6379;
-//                    hps.add(new HostAndPort(host, port));
-//                }
-//                this.cluster = new JedisCluster(hps, CONNECT_TIMEOUT, SO_TIMEOUT, MAX_ATTEMPTS, password, poolConfig);
-//                break;
+            case "cluster":
+                Set<HostAndPort> hps = new HashSet<>();
+                for(String node : hosts.split(",")){
+                    String[] infos = node.split(":");
+                    String host = infos[0];
+                    int port = (infos.length > 1)?Integer.parseInt(infos[1]):6379;
+                    hps.add(new HostAndPort(host, port));
+                }
+                GenericObjectPoolConfig<Connection> poolConfig1 = new GenericObjectPoolConfig<>();
+                poolConfig1.setMaxTotal(poolConfig.getMaxTotal());
+                poolConfig1.setMaxIdle(poolConfig.getMaxIdle());
+                poolConfig1.setMinIdle(poolConfig.getMinIdle());
+                poolConfig1.setMaxWaitMillis(poolConfig.getMaxWaitMillis());
+                poolConfig1.setTestOnBorrow(poolConfig.getTestOnBorrow());
+                poolConfig1.setTestOnReturn(poolConfig.getTestOnReturn());
+                poolConfig1.setTestWhileIdle(poolConfig.getTestWhileIdle());
+                poolConfig1.setNumTestsPerEvictionRun(poolConfig.getNumTestsPerEvictionRun());
+                poolConfig1.setTimeBetweenEvictionRunsMillis(poolConfig.getTimeBetweenEvictionRunsMillis());
+                poolConfig1.setMinEvictableIdleTimeMillis(poolConfig.getMinEvictableIdleTimeMillis());
+                poolConfig1.setSoftMinEvictableIdleTimeMillis(poolConfig.getSoftMinEvictableIdleTimeMillis());
+                poolConfig1.setEvictionPolicyClassName(poolConfig.getEvictionPolicyClassName());
+                poolConfig1.setBlockWhenExhausted(poolConfig.getBlockWhenExhausted());
+                poolConfig1.setJmxEnabled(poolConfig.getJmxEnabled());
+                poolConfig1.setJmxNamePrefix(poolConfig.getJmxNamePrefix());
+                poolConfig1.setJmxNameBase(poolConfig.getJmxNameBase());
+                poolConfig1.setFairness(poolConfig.getFairness());
+                poolConfig1.setLifo(poolConfig.getLifo());
+                this.cluster = new JedisCluster(hps, CONNECT_TIMEOUT, SO_TIMEOUT, MAX_ATTEMPTS, password, poolConfig1);
+                break;
 //            case "sharded":
 //                List<JedisShardInfo> shards = new ArrayList<>();
 //                try {

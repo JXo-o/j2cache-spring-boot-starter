@@ -41,7 +41,7 @@ public class J2Cache {
         getBuilder().close();
     }
 
-    private static J2CacheBuilder getBuilder() {
+    public J2CacheBuilder getBuilder() {
         if (builder == null) {
             throw new IllegalStateException("J2CacheBuilder is not initialized");
         }

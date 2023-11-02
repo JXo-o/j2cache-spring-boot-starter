@@ -3,6 +3,7 @@ package net.oschina.j2cache.service.cache.impl.redis;
 import net.oschina.j2cache.service.cache.impl.CacheProviderHolder;
 import net.oschina.j2cache.model.Command;
 import net.oschina.j2cache.service.cluster.ClusterPolicy;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.*;
@@ -63,17 +64,36 @@ public class RedisPubSubClusterPolicy extends JedisPubSub implements ClusterPoli
             String masterName = props.getProperty("cluster_name", "j2cache");
             this.client = new JedisSentinelPool(masterName, hosts, config, timeout, password, database);
         }
-//        else if ("cluster".equalsIgnoreCase(mode)) {
-//            String[] nodeArray = node.split(",");
-//            Set<HostAndPort> nodeSet = new HashSet<HostAndPort>(nodeArray.length);
-//            for (String nodeItem : nodeArray) {
-//                String[] arr = nodeItem.split(":");
-//                nodeSet.add(new HostAndPort(arr[0], Integer.valueOf(arr[1])));
-//            }
-//            JedisPoolConfig poolConfig = RedisUtils.newPoolConfig(props, null);
-//            this.cluster = new JedisCluster(nodeSet, CONNECT_TIMEOUT, SO_TIMEOUT, MAX_ATTEMPTS, password, poolConfig);
-//            this.clusterMode = true;
-//        }
+        else if ("cluster".equalsIgnoreCase(mode)) {
+            String[] nodeArray = node.split(",");
+            Set<HostAndPort> nodeSet = new HashSet<HostAndPort>(nodeArray.length);
+            for (String nodeItem : nodeArray) {
+                String[] arr = nodeItem.split(":");
+                nodeSet.add(new HostAndPort(arr[0], Integer.valueOf(arr[1])));
+            }
+            JedisPoolConfig poolConfig = RedisUtils.newPoolConfig(props, null);
+            GenericObjectPoolConfig<Connection> poolConfig1 = new GenericObjectPoolConfig<>();
+            poolConfig1.setMaxTotal(poolConfig.getMaxTotal());
+            poolConfig1.setMaxIdle(poolConfig.getMaxIdle());
+            poolConfig1.setMinIdle(poolConfig.getMinIdle());
+            poolConfig1.setMaxWaitMillis(poolConfig.getMaxWaitMillis());
+            poolConfig1.setTestOnBorrow(poolConfig.getTestOnBorrow());
+            poolConfig1.setTestOnReturn(poolConfig.getTestOnReturn());
+            poolConfig1.setTestWhileIdle(poolConfig.getTestWhileIdle());
+            poolConfig1.setNumTestsPerEvictionRun(poolConfig.getNumTestsPerEvictionRun());
+            poolConfig1.setTimeBetweenEvictionRunsMillis(poolConfig.getTimeBetweenEvictionRunsMillis());
+            poolConfig1.setMinEvictableIdleTimeMillis(poolConfig.getMinEvictableIdleTimeMillis());
+            poolConfig1.setSoftMinEvictableIdleTimeMillis(poolConfig.getSoftMinEvictableIdleTimeMillis());
+            poolConfig1.setEvictionPolicyClassName(poolConfig.getEvictionPolicyClassName());
+            poolConfig1.setBlockWhenExhausted(poolConfig.getBlockWhenExhausted());
+            poolConfig1.setJmxEnabled(poolConfig.getJmxEnabled());
+            poolConfig1.setJmxNamePrefix(poolConfig.getJmxNamePrefix());
+            poolConfig1.setJmxNameBase(poolConfig.getJmxNameBase());
+            poolConfig1.setFairness(poolConfig.getFairness());
+            poolConfig1.setLifo(poolConfig.getLifo());
+            this.cluster = new JedisCluster(nodeSet, CONNECT_TIMEOUT, SO_TIMEOUT, MAX_ATTEMPTS, password, poolConfig1);
+            this.clusterMode = true;
+        }
         else {
             node = node.split(",")[0]; //取第一台主机
             String[] infos = node.split(":");

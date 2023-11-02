@@ -116,4 +116,8 @@ public class J2CacheBuilder {
         log.info("Using cluster policy : {}", policy.getClass().getName());
     }
 
+    public ClusterPolicy getPolicy() {
+        return policy;
+    }
+
 }

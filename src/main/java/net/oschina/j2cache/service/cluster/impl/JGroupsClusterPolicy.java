@@ -20,7 +20,7 @@ import java.util.Properties;
  * @version 1.0
  * @date 2023/10/23 1:01
  */
-public class JGroupsClusterPolicy extends ReceiverAdapter implements ClusterPolicy {
+public class JGroupsClusterPolicy implements ClusterPolicy, Receiver {
 
     private final static Logger log = LoggerFactory.getLogger(JGroupsClusterPolicy.class);
 
@@ -80,7 +80,7 @@ public class JGroupsClusterPolicy extends ReceiverAdapter implements ClusterPoli
             URL xml = getClass().getResource(configXml);
             if(xml == null)
                 xml = getClass().getClassLoader().getParent().getResource(configXml);
-            channel = new JChannel(xml);
+            channel = new JChannel(xml.toString());
             channel.setReceiver(this);
             channel.connect(name);
 
@@ -117,7 +117,7 @@ public class JGroupsClusterPolicy extends ReceiverAdapter implements ClusterPoli
     public void publish(Command cmd) {
         try {
             cmd.setSrc(LOCAL_COMMAND_ID);
-            Message msg = new Message(null, cmd.json());
+            Message msg = new ObjectMessage(null, cmd.json());
             channel.send(msg);
         } catch (Exception e) {
             log.error("Failed to send message to jgroups -> {}", cmd, e);
