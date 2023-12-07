@@ -1,6 +1,7 @@
 package net.oschina.j2cache.config;
 
 import net.oschina.j2cache.service.cache.CacheChannel;
+import net.oschina.j2cache.service.cache.CacheExpiredListener;
 import net.oschina.j2cache.service.cache.impl.CacheProviderHolder;
 import net.oschina.j2cache.service.cluster.ClusterPolicy;
 import net.oschina.j2cache.service.cluster.ClusterPolicyFactory;
@@ -41,7 +42,7 @@ public class J2CacheBuilder {
      * @param config j2cache config instance
      * @return J2CacheBuilder instance
      */
-    public final static J2CacheBuilder init(J2CacheProperties config) {
+    public static J2CacheBuilder init(J2CacheProperties config) {
         return new J2CacheBuilder(config);
     }
 
@@ -99,18 +100,35 @@ public class J2CacheBuilder {
     private void initFromConfig(J2CacheProperties config) {
         SerializationUtils.init(config.getSerialization(), config.getSubProperties(config.getSerialization()));
         //初始化两级的缓存管理
-        this.holder = CacheProviderHolder.init(config, (region, key) -> {
-            //当一级缓存中的对象失效时，自动清除二级缓存中的数据
-            Level2Cache level2 = this.holder.getLevel2Cache(region);
-            level2.evict(key);
-            if (!level2.supportTTL()) {
-                //再一次清除一级缓存是为了避免缓存失效时再次从 L2 获取到值
-                this.holder.getLevel1Cache(region).evict(key);
-            }
-            log.debug("Level 1 cache object expired, evict level 2 cache object [{},{}]", region, key);
-            if (policy != null)
-                policy.sendEvictCmd(region, key);
-        });
+//        this.holder = CacheProviderHolder.init(config, (region, key) -> {
+//            //当一级缓存中的对象失效时，自动清除二级缓存中的数据
+//            Level2Cache level2 = this.holder.getLevel2Cache(region);
+//            level2.evict(key);
+//            if (!level2.supportTTL()) {
+//                //再一次清除一级缓存是为了避免缓存失效时再次从 L2 获取到值
+//                this.holder.getLevel1Cache(region).evict(key);
+//            }
+//            log.debug("Level 1 cache object expired, evict level 2 cache object [{},{}]", region, key);
+//            if (policy != null)
+//                policy.sendEvictCmd(region, key);
+//        });
+
+        this.holder = CacheProviderHolder.builder()
+                .withConfig(config)
+                .withListener((region, key) -> {
+                    // 当一级缓存中的对象失效时，自动清除二级缓存中的数据
+                    Level2Cache level2 = this.holder.getLevel2Cache(region);
+                    level2.evict(key);
+                    if (!level2.supportTTL()) {
+                        // 再一次清除一级缓存是为了避免缓存失效时再次从 L2 获取到值
+                        this.holder.getLevel1Cache(region).evict(key);
+                    }
+                    log.debug("Level 1 cache object expired, evict level 2 cache object [{},{}]", region, key);
+                    if (policy != null) {
+                        policy.sendEvictCmd(region, key);
+                    }
+                })
+                .build();
 
         policy = ClusterPolicyFactory.init(holder, config.getBroadcast(), config.getBroadcastProperties());
         log.info("Using cluster policy : {}", policy.getClass().getName());

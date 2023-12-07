@@ -22,38 +22,18 @@ public class SerializationUtils {
     private static Serializer g_serializer;
 
     /**
+     * 私有化构造器
+     * */
+    private SerializationUtils() {
+    }
+
+    /**
      * 初始化序列化器
      * @param ser  serialization method
      * @param props serializer properties
      */
     public static void init(String ser, Properties props) {
-        if (ser == null || "".equals(ser.trim()))
-            g_serializer = new JavaSerializer();
-        else {
-            if ("java".equals(ser)) {
-                g_serializer = new JavaSerializer();
-            } else if ("fst".equals(ser)) {
-                g_serializer = new FSTSerializer();
-            } else if ("kryo".equals(ser)) {
-                g_serializer = new KryoSerializer();
-            } else if ("kryo-pool".equals(ser)){
-                g_serializer = new KryoPoolSerializer();
-            } else if("fst-snappy".equals(ser)){
-                g_serializer=new FstSnappySerializer();
-            } else if ("json".equals(ser)) {
-                g_serializer = new FstJSONSerializer(props);
-            } else if ("fastjson".equals(ser)) {
-                g_serializer = new FastjsonSerializer();
-            } else if ("fse".equals(ser)) {
-                g_serializer = new FseSerializer();
-            } else {
-                try {
-                    g_serializer = (Serializer) Class.forName(ser).newInstance();
-                } catch (Exception e) {
-                    throw new CacheException("Cannot initialize Serializer named [" + ser + ']', e);
-                }
-            }
-        }
+        g_serializer = SerializerFactory.createSerializer(ser, props);
         log.info("Using Serializer -> [{}:{}]", g_serializer.name(), g_serializer.getClass().getName());
     }
 
