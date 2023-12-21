@@ -2,6 +2,8 @@ package net.oschina.j2cache.util.serializer;
 
 import net.oschina.j2cache.exception.CacheException;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -15,46 +17,44 @@ import java.util.Properties;
  */
 public class SerializerFactory {
 
-    public static Serializer createSerializer(String ser, Properties props) {
-        Serializer serializer;
+    private static final Map<String, Serializer> serializerCache = new HashMap<>();
 
+    public static Serializer createSerializer(String ser, Properties props) {
         if (ser == null || "".equals(ser.trim())) {
-            serializer = new JavaSerializer();
-        } else {
-            switch (ser) {
-                case "java":
-                    serializer = new JavaSerializer();
-                    break;
-                case "fst":
-                    serializer = new FSTSerializer();
-                    break;
-                case "kryo":
-                    serializer = new KryoSerializer();
-                    break;
-                case "kryo-pool":
-                    serializer = new KryoPoolSerializer();
-                    break;
-                case "fst-snappy":
-                    serializer = new FstSnappySerializer();
-                    break;
-                case "json":
-                    serializer = new FstJSONSerializer(props);
-                    break;
-                case "fastjson":
-                    serializer = new FastjsonSerializer();
-                    break;
-                case "fse":
-                    serializer = new FseSerializer();
-                    break;
-                default:
-                    try {
-                        serializer = (Serializer) Class.forName(ser).newInstance();
-                    } catch (Exception e) {
-                        throw new CacheException("Cannot initialize Serializer named [" + ser + ']', e);
-                    }
-            }
+            return getSerializer("java", props);
         }
 
-        return serializer;
+        return getSerializer(ser, props);
+    }
+
+    private static Serializer getSerializer(String ser, Properties props) {
+        return serializerCache.computeIfAbsent(ser, key -> createNewSerializer(ser, props));
+    }
+
+    private static Serializer createNewSerializer(String ser, Properties props) {
+        switch (ser) {
+            case "java":
+                return new JavaSerializer();
+            case "fst":
+                return new FSTSerializer();
+            case "kryo":
+                return new KryoSerializer();
+            case "kryo-pool":
+                return new KryoPoolSerializer();
+            case "fst-snappy":
+                return new FstSnappySerializer();
+            case "json":
+                return new FstJSONSerializer(props);
+            case "fastjson":
+                return new FastjsonSerializer();
+            case "fse":
+                return new FseSerializer();
+            default:
+                try {
+                    return (Serializer) Class.forName(ser).newInstance();
+                } catch (Exception e) {
+                    throw new CacheException("Cannot initialize Serializer named [" + ser + ']', e);
+                }
+        }
     }
 }

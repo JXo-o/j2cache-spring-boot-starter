@@ -11,6 +11,9 @@ import net.oschina.j2cache.service.cache.impl.nil.NullCacheProvider;
 import net.oschina.j2cache.service.cache.impl.redis.ReadonlyRedisCacheProvider;
 import net.oschina.j2cache.service.cache.impl.redis.RedisCacheProvider;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * ClassName: CacheProviderFactory
  * Package: net.oschina.j2cache.service.cache.impl
@@ -21,7 +24,17 @@ import net.oschina.j2cache.service.cache.impl.redis.RedisCacheProvider;
  * @date 2023/12/7 11:53
  */
 public class CacheProviderFactory {
-    public static CacheProvider createCacheProvider(String cacheIdent) {
+
+    /*
+    * 新添加的享元模式
+    * */
+    private static final Map<String, CacheProvider> cacheProviders = new HashMap<>();
+
+    public static synchronized CacheProvider createCacheProvider(String cacheIdent) {
+        return cacheProviders.computeIfAbsent(cacheIdent.toLowerCase(), CacheProviderFactory::createProviderInstance);
+    }
+
+    private static CacheProvider createProviderInstance(String cacheIdent) {
         switch (cacheIdent.toLowerCase()) {
             case "ehcache":
                 return new EhCacheProvider();

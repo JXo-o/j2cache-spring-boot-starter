@@ -23,6 +23,7 @@ public abstract class LettuceCache implements Level2Cache {
     protected String region;
     protected GenericObjectPool<StatefulConnection<String, byte[]>> pool;
     protected int scanCount;
+    private SyncStrategy strategy;
 
     protected StatefulConnection connect() {
         try {
@@ -32,12 +33,18 @@ public abstract class LettuceCache implements Level2Cache {
         }
     }
 
+    protected void setStrategy(StatefulConnection conn) {
+        if (conn instanceof StatefulRedisClusterConnection) {
+            strategy = new ClusterSyncStrategy();
+        } else if (conn instanceof StatefulRedisConnection) {
+            strategy = new SingleNodeSyncStrategy();
+        } else {
+            strategy = null;
+        }
+    }
+
     protected BaseRedisCommands sync(StatefulConnection conn) {
-        if(conn instanceof StatefulRedisClusterConnection)
-            return ((StatefulRedisClusterConnection)conn).sync();
-        else if(conn instanceof StatefulRedisConnection)
-            return ((StatefulRedisConnection)conn).sync();
-        return null;
+        return strategy == null ? null : strategy.sync(conn);
     }
 
 }
