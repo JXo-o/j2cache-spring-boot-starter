@@ -27,11 +27,16 @@ public abstract class LettuceCache implements Level2Cache {
 
     protected StatefulConnection connect() {
         try {
+            setStrategy(pool.borrowObject());
             return pool.borrowObject();
         } catch (Exception e) {
             throw new CacheException(e);
         }
     }
+
+    /**
+     * 策略模式进行处理
+     * */
 
     protected void setStrategy(StatefulConnection conn) {
         if (conn instanceof StatefulRedisClusterConnection) {

@@ -20,6 +20,8 @@ import java.util.Collection;
  */
 public class CacheProviderHolder {
 
+
+    /*这里使用建造者模式改造*/
     private final static Logger log = LoggerFactory.getLogger(CacheProviderHolder.class);
 
     private CacheProvider l1_provider;
@@ -30,24 +32,24 @@ public class CacheProviderHolder {
     private CacheProviderHolder() {
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static ConcreteCacheProviderBuilder builder() {
+        return new ConcreteCacheProviderBuilder();
     }
 
-    public static class Builder {
+    public static class ConcreteCacheProviderBuilder implements CacheProviderBuilder {
         private J2CacheProperties config;
         private CacheExpiredListener listener;
-
-        public Builder withConfig(J2CacheProperties config) {
+        @Override
+        public ConcreteCacheProviderBuilder withConfig(J2CacheProperties config) {
             this.config = config;
             return this;
         }
-
-        public Builder withListener(CacheExpiredListener listener) {
+        @Override
+        public ConcreteCacheProviderBuilder withListener(CacheExpiredListener listener) {
             this.listener = listener;
             return this;
         }
-
+        @Override
         public CacheProviderHolder build() {
             CacheProviderHolder holder = new CacheProviderHolder();
             holder.listener = this.listener;

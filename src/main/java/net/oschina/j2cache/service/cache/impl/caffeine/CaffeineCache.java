@@ -1,11 +1,16 @@
 package net.oschina.j2cache.service.cache.impl.caffeine;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import net.oschina.j2cache.service.cache.AbstractL1Cache;
 import net.oschina.j2cache.service.cache.Level1Cache;
+import org.ehcache.event.CacheEvent;
+import org.ehcache.event.EventType;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * ClassName: CaffeineCache
@@ -16,7 +21,7 @@ import java.util.Map;
  * @version 1.0
  * @date 2023/10/23 0:44
  */
-public class CaffeineCache implements Level1Cache {
+public class CaffeineCache extends AbstractL1Cache {
 
     private Cache<String, Object> cache;
     private long size ;
@@ -37,37 +42,38 @@ public class CaffeineCache implements Level1Cache {
     public long size() { return size; }
 
     @Override
-    public Object get(String key) {
+    protected Object getFromCache(String key) {
         return cache.getIfPresent(key);
     }
 
     @Override
-    public Map<String, Object> get(Collection<String> keys) {
+    protected Map<String, Object> getFromCache(Collection<String> keys) {
         return cache.getAllPresent(keys);
     }
 
     @Override
-    public void put(String key, Object value) {
+    protected void putInCache(String key, Object value) {
         cache.put(key, value);
     }
 
     @Override
-    public void put(Map<String, Object> elements) {
+    protected void putInCache(Map<String, Object> elements) {
         cache.putAll(elements);
     }
 
     @Override
-    public Collection<String> keys() {
-        return cache.asMap().keySet();
-    }
-
-    @Override
-    public void evict(String...keys) {
+    protected void evictFromCache(String... keys) {
         cache.invalidateAll(Arrays.asList(keys));
     }
 
     @Override
-    public void clear() {
+    protected void clearCache() {
         cache.invalidateAll();
     }
+
+    @Override
+    protected Collection<String> getKeysFromCache() {
+        return cache.asMap().keySet();
+    }
+
 }

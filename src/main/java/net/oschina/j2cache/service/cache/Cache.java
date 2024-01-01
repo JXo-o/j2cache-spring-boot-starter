@@ -20,7 +20,7 @@ public interface Cache {
      * @param key cache key
      * @return the cached object or null
      */
-    Object get(String key) ;
+    Object get(String key);
 
     /**
      * 批量获取缓存对象
@@ -58,7 +58,7 @@ public interface Cache {
      *
      * @return 返回键的集合
      */
-    Collection<String> keys() ;
+    Collection<String> keys();
 
     /**
      * Remove items from the cache

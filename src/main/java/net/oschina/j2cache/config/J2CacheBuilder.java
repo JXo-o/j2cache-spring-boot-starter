@@ -1,7 +1,7 @@
 package net.oschina.j2cache.config;
 
 import net.oschina.j2cache.service.cache.CacheChannel;
-import net.oschina.j2cache.service.cache.CacheExpiredListener;
+import net.oschina.j2cache.service.cache.impl.CacheProviderBuilder;
 import net.oschina.j2cache.service.cache.impl.CacheProviderHolder;
 import net.oschina.j2cache.service.cluster.ClusterPolicy;
 import net.oschina.j2cache.service.cluster.ClusterPolicyFactory;
@@ -31,6 +31,7 @@ public class J2CacheBuilder {
     private ClusterPolicy policy; //不同的广播策略
     private AtomicBoolean opened = new AtomicBoolean(false);
     private J2CacheProperties config;
+    private CacheProviderBuilder builder;
 
     private J2CacheBuilder(J2CacheProperties config) {
         this.config = config;
@@ -113,7 +114,9 @@ public class J2CacheBuilder {
 //                policy.sendEvictCmd(region, key);
 //        });
 
-        this.holder = CacheProviderHolder.builder()
+        builder = CacheProviderHolder.builder();
+
+        this.holder = builder
                 .withConfig(config)
                 .withListener((region, key) -> {
                     // 当一级缓存中的对象失效时，自动清除二级缓存中的数据

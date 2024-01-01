@@ -1,5 +1,6 @@
 package net.oschina.j2cache.service.cache.impl.ehcache;
 
+import net.oschina.j2cache.service.cache.AbstractL1Cache;
 import net.oschina.j2cache.service.cache.CacheExpiredListener;
 import net.oschina.j2cache.service.cache.Level1Cache;
 import org.ehcache.config.ResourceType;
@@ -20,7 +21,11 @@ import java.util.stream.Collectors;
  * @version 1.0
  * @date 2023/10/23 1:21
  */
-public class EhCache3 implements Level1Cache, CacheEventListener {
+public class EhCache3 extends AbstractL1Cache implements CacheEventListener {
+
+    /**
+     * 模板方法策略
+     * */
 
     private String name;
     private org.ehcache.Cache<String, Object> cache;
@@ -50,43 +55,43 @@ public class EhCache3 implements Level1Cache, CacheEventListener {
     }
 
     @Override
-    public Object get(String key) {
-        return this.cache.get(key);
-    }
-
-    @Override
-    public void put(String key, Object value) {
-        this.cache.put(key, value);
-    }
-
-    @Override
-    public Map<String, Object> get(Collection<String> keys) {
-        return cache.getAll(keys.stream().collect(Collectors.toSet()));
-    }
-
-    @Override
     public boolean exists(String key) {
         return cache.containsKey(key);
     }
 
     @Override
-    public void put(Map<String, Object> elements) {
+    protected Object getFromCache(String key) {
+        return this.cache.get(key);
+    }
+
+    @Override
+    protected Map<String, Object> getFromCache(Collection<String> keys) {
+        return cache.getAll(keys.stream().collect(Collectors.toSet()));
+    }
+
+    @Override
+    protected void putInCache(String key, Object value) {
+        this.cache.put(key, value);
+    }
+
+    @Override
+    protected void putInCache(Map<String, Object> elements) {
         cache.putAll(elements);
     }
 
     @Override
-    public Collection<String> keys() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void evict(String...keys) {
+    protected void evictFromCache(String... keys) {
         this.cache.removeAll(Arrays.stream(keys).collect(Collectors.toSet()));
     }
 
     @Override
-    public void clear() {
+    protected void clearCache() {
         this.cache.clear();
+    }
+
+    @Override
+    protected Collection<String> getKeysFromCache() {
+        return Collections.emptyList();
     }
 
     @Override
